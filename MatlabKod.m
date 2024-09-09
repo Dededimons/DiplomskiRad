@@ -1,80 +1,61 @@
 % linear frequency modulation
-sig = fmlin(128, 0, 0.5);
-
-% Plot generiranog signala
+N = 128
+sig = fmlin(N, 0, 0.5);
 figure;
 plot(real(sig));
 xlabel('Time');
 ylabel('Amplitude');
-title('Time-Domain Representation of linear frequency modulation ');
+title('Time-Domain Representation of Linear Frequency Modulation');
 grid on;
 
-% Fourierova transformacija
-dsp = fftshift(abs(fft(sig)).^2);
-f = (-length(sig)/2:length(sig)/2-1) / length(sig);
+% Short-Time Fourier Transform (STFT) using tfrstft
+[tfr, t, f] = tfrstft(sig);
 
-% Plot 
+% Plot the time-frequency representation using imagesc
 figure;
-plot(f, dsp);
-xlabel('Normalized Frequency');
-ylabel('Power');
-title('Frequency Spectrum (FFT) of the Chirp Signal');
+imagesc(t, f, abs(tfr));  % Using abs to plot magnitude of the STFT result
+xlabel('Time');
+ylabel('Frequency');
+title('Time-Frequency Representation (STFT)');
+axis xy; % Correct axis orientation
+colorbar;  % Show colorbar to represent magnitude
 grid on;
 
-% Spektralna gustoća snage
-[pxx, f] = pwelch(sig, [], [], [], 1);
-
-% Plot SGS
-figure;
-plot(f, 10*log10(pxx));
-xlabel('Frequency');
-ylabel('Power/Frequency (dB/Hz)');
-title('Power Spectral Density of the Chirp Signal');
-grid on;
-
-% Generiranje šuma
-N = 256; 
+% Generating noise using Time-Frequency Toolbox
 noise = noisecg(N, 0.8); 
 
-% Plot šum
+% Plot the noise in time domain
 figure;
 plot(real(noise));
 xlabel('Time');
 ylabel('Amplitude');
 title('Colored Gaussian Noise in Time Domain');
+grid on;
 
-% FFT and PSD of the signal
+% Fourier Transform and Power Spectral Density (PSD) of the noise
 dsp = fftshift(abs(fft(noise)).^2); % Power spectrum
-f = (-N/2:N/2-1)/N; % Frequency axis
+f_noise = (-N/2:N/2-1) / N; % Frequency axis
 
-% Plot the PSD
+% Log-Log Plot of the noise power spectrum
 figure;
-plot(f, dsp);
-xlabel('Normalized Frequency');
-ylabel('Power');
-title('Power Spectral Density of the Noise');
-
-
-% Log-Log Plot
-figure;
-loglog(f(f>0), dsp(f>0));
+loglog(f_noise(f_noise > 0), dsp(f_noise > 0));
 xlabel('Frequency');
 ylabel('Power');
-title('Log-Log Power Spectral Density');
+title('Log-Log Power Spectral Density of the Noise');
 grid on;
 
 % Fit a line to the log-log PSD
-logF = log(f(f>0)); % Log of positive frequencies
-logPxx = log(dsp(f>0)); % Log of power spectrum
+logF = log(f_noise(f_noise > 0)); % Log of positive frequencies
+logPxx = log(dsp(f_noise > 0)); % Log of power spectrum
 
-% Fit a line
+% Fit a line to the log-log plot
 coefficients = polyfit(logF, logPxx, 1);
 slope = coefficients(1);
 
 % Display the slope
 fprintf('The slope of the log-log PSD is: %.2f\n', slope);
 
-% Determine the color of the noise based on slope
+% Determine the color of the noise based on the slope
 if slope >= -0.5 && slope <= 0.5
     disp('The signal is White Noise');
 elseif slope > -1.5 && slope < -0.5
@@ -84,6 +65,3 @@ elseif slope < -1.5
 else
     disp('Unknown noise characteristic');
 end
-
-
-
