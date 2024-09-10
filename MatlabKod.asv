@@ -8,6 +8,8 @@ ylabel('Amplitude');
 title('Time-Domain Representation of Linear Frequency Modulation');
 grid on;
 
+
+
 % Generating noise using Time-Frequency Toolbox
 noise = noisecg(N, 0.8); 
 
@@ -31,5 +33,12 @@ ylabel('Power');
 title('Log-Log Power Spectral Density of the Noise');
 grid on;
 
+% Fit a line to the log-log PSD
+logF = log(f_noise(f_noise > 0)); % Log of positive frequencies
+logPxx = log(dsp(f_noise > 0)); % Log of power spectrum
+
+% Fit a line to the log-log plot
+coefficients = polyfit(logF, logPxx, 1);
+slope = coefficients(1);
 
 
