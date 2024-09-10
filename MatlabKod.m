@@ -5,8 +5,10 @@ figure;
 plot(real(sig));
 xlabel('Time');
 ylabel('Amplitude');
+axis([1 N -1 1]);
 title('Time-Domain Representation of Linear Frequency Modulation');
 grid on;
+
 
 % Generating noise using Time-Frequency Toolbox
 noise = noisecg(N, 0.8); 
@@ -16,6 +18,7 @@ figure;
 plot(real(noise));
 xlabel('Time');
 ylabel('Amplitude');
+axis([1 N -1 1]);
 title('Colored Gaussian Noise in Time Domain');
 grid on;
 
