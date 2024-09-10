@@ -47,7 +47,7 @@ title('Log-Log Power Spectral Density of the signal');
 grid on;
 
 spojeni = sigmerge(sig, noise,1)
-
+dsps = fftshift(abs(fft(spojeni)).^2); % Power spectrum
 
 f_spojeni = (-N/2:N/2-1) / N;
 
