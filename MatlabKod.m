@@ -8,21 +8,8 @@ ylabel('Amplitude');
 title('Time-Domain Representation of Linear Frequency Modulation');
 grid on;
 
-% Short-Time Fourier Transform (STFT) using tfrstft
-[tfr, t, f] = tfrstft(sig);
 
-% Plot the time-frequency representation using imagesc
-figure;
-imagesc(t, f, abs(tfr));  % Using abs to plot magnitude of the STFT result
-xlabel('Time');
-ylabel('Frequency');
-title('Time-Frequency Representation (STFT)');
-axis xy; % Correct axis orientation
-colorbar;  % Show colorbar to represent magnitude
-grid on;
-
-% Generating noise using Time-Frequency Toolbox
-noise = noisecg(N, 0.8); 
+noise = noisecg(N, 1); 
 
 % Plot the noise in time domain
 figure;
