@@ -35,4 +35,35 @@ title('Log-Log Power Spectral Density of the Noise');
 grid on;
 
 
+dsp2 = fftshift(abs(fft(sig)).^2); % Power spectrum
+f_signal = (-N/2:N/2-1) / N;
 
+% Log-Log Plot of the signal power spectrum
+figure;
+loglog(f_signal(f_signal > 0), dsp2(f_signal > 0));
+xlabel('Frequency');
+ylabel('Power');
+title('Log-Log Power Spectral Density of the signal');
+grid on;
+
+spojeni = sigmerge(sig, noise,1)
+
+
+f_spojeni = (-N/2:N/2-1) / N;
+
+% Log-Log Plot of the spojenisignal power spectrum
+figure;
+loglog(f_spojeni(f_spojeni > 0), dsps(f_spojeni > 0));
+xlabel('Frequency');
+ylabel('Power');
+title('Log-Log Power Spectral Density of the spojenisignal');
+grid on;
+
+oduzeti = dsps - dsp2
+dspoduzeti = fftshift(abs(fft(oduzeti)).^2);
+figure;
+loglog(f_spojeni(f_spojeni > 0), dspoduzeti(f_spojeni > 0));
+xlabel('Frequency');
+ylabel('Power');
+title('Log-Log Power Spectral Density of the oduzeti');
+grid on;
