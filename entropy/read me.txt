@@ -1,0 +1,5 @@
+The functions include extensive Shannon and nonextensive Tsallis,escort Tsallis,and renyi entropy.
+the funcition names start with K_q_ indicate relative entropys
+Usage for all the seven functions:
+
+if we assume DATA to be a matrix by M*N  . then the format should be sum(DATA(:,i))=1,for i=1:N, and N is the length of the time series  

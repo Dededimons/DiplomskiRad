@@ -65,10 +65,10 @@ for indeks = 1:length(SNR)
     razinaSNR = SNR(indeks);
     vrijednostiRenyi = zeros(brojSimulacija, 1); 
     for simulacija = 1:brojSimulacija
-        p1 = [1, 0];  
-        p2 = [N/2, 0.25]; 
-        p3 = [N, 0.4]; 
-        [signal, ~] = fmpar(N, p1, p2, p3); 
+      p1 = [1, 0];      % Početak: t=1, f=0
+p2 = [64, 0.25];  % Sredina: t=64, f=0.25
+p3 = [128, 0.5];  % Kraj: t=128, f=0.5
+        [signal, ~] = fmpar(N, p1, p2, p3); % Ignoriraj iflaw za sada
         sum = noisecg(N);
         noisySignal = sigmerge(signal, sum, razinaSNR);
         [wvd_tf, vrijeme, frekvencija] = tfrwv(noisySignal);
