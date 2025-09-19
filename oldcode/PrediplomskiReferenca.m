@@ -1,6 +1,6 @@
 SNR=0
 N=1000;
-sig1=fmpar(N);
+sig1=fmsin(N);
 plot(real(sig1))
 title('sig1 Linear frequency modulation');
 axis([1 N -1 1]);

@@ -32,11 +32,12 @@ for indeks = 1:length(SNR)
 end
 
 tablicaRezultata = table(SNR', prosjecnaRenyi, ...
-                      'Var', {'SNR', 'Prosjecna_Renyiova_Entropija(alpha3)'});
+                      'Var', {'SNR', 'Prosjecna_Renyiova_Entropija_Linearna(alpha3)'});
 
 disp('Tablica rezultata:');
 disp(tablicaRezultata);
 
+%% 
 
 % Sin modulacija
 prosjecnaRenyi_sinus = zeros(length(SNR), 1);
@@ -58,6 +59,7 @@ tablicaSinus = table(SNR', prosjecnaRenyi_sinus, ...
                     'VariableNames', {'SNR', 'Prosjecna_Renyiova_Entropija_Sinusoidalna(alpha3)'});
 disp('Tablica rezultata za sinusoidalnu modulaciju:');
 disp(tablicaSinus);
+
 
 % Parabolična modulacija
 prosjecnaRenyi_parab = zeros(length(SNR), 1);
