@@ -59,5 +59,5 @@ for indeks = 1:length(SNR)
 end
 
 T = table(SNR.', rezultati_fmlin, rezultati_fmsin, rezultati_fmpar, ...
-    'VariableNames', {'SNR_dB','Renyi_fmlin','Renyi_fmsin','Renyi_fmpar'});
+    'VariableNames', {'SNR','Renyi_fmlin','Renyi_fmsin','Renyi_fmpar'});
 disp(T);
