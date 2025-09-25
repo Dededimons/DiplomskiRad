@@ -2,7 +2,7 @@ clear; clc; close all;
 
 N = 1024;
 startFrequency = 0; endFrequency = 0.5; 
-numSimulations = 100;  
+numSimulations = 300;  
 q = 2; 
 SNR = [10, 5, 1]; 
 
