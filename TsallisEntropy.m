@@ -3,9 +3,9 @@ clear; clc; close all;
 N = 1024;
 startFrequency = 0; endFrequency = 0.5; 
 numSimulations = 100;  
+q = 2; 
 SNR = [10, 5, 1]; 
 
-% Initialize colored noise generators
 pinkGen   = dsp.ColoredNoise('Color','pink','SamplesPerFrame',N,'NumChannels',1);
 brownGen  = dsp.ColoredNoise('Color','brown','SamplesPerFrame',N,'NumChannels',1);
 blueGen   = dsp.ColoredNoise('Color','blue','SamplesPerFrame',N,'NumChannels',1);
@@ -16,19 +16,13 @@ signalTypes = {'fmlin','fmsin','fmpar'};
 
 results = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
 
-% Embedding parameters
-embeddingDim = 3; % Embedding dimension
-tau = 1;          % Time delay (in samples)
-T = 1;            % Time step (approximated as 1 sample)
-
 for sType = 1:length(signalTypes)
     for nType = 1:length(noiseTypes)
         for idx = 1:length(SNR)
             currentSNR = SNR(idx);
-            kolmogorovValues = zeros(numSimulations,1);
+            tsallisValues = zeros(numSimulations,1);
             
             for sim = 1:numSimulations
-                % Generate signal
                 switch signalTypes{sType}
                     case 'fmlin'
                         signal = fmlin(N, startFrequency, endFrequency);
@@ -40,8 +34,7 @@ for sType = 1:length(signalTypes)
                         p3 = [N, 0.4]; 
                         [signal,~] = fmpar(N, p1, p2, p3);
                 end
-                
-                % Generate noise
+
                 switch noiseTypes{nType}
                     case 'white'
                         noise = noisecg(N);
@@ -54,52 +47,24 @@ for sType = 1:length(signalTypes)
                     case 'purple'
                         noise = purpleGen();
                 end
-                
-                % Merge signal and noise
+
                 noisySignal = sigmerge(signal, noise, currentSNR);
+
+                [PSD,~] = pwelch(noisySignal, hamming(256), 128, 1024, 1);
+                PSD = PSD / sum(PSD); 
+
+                PSD(PSD == 0) = eps;
                 
-                % Phase space reconstruction
-                numPoints = N - (embeddingDim - 1) * tau;
-                phaseSpace = zeros(numPoints, embeddingDim);
-                for d = 1:embeddingDim
-                    phaseSpace(:,d) = noisySignal(1 + (d-1)*tau : N - (embeddingDim-d)*tau);
-                end
-                
-                % Compute correlation sum
-                rMax = std(noisySignal) * 0.2; % Maximum distance scale
-                r = logspace(-2, log10(rMax), 10); % Range of distances
-                C = zeros(size(r));
-                
-                for i = 1:length(r)
-                    count = 0;
-                    for j = 1:numPoints-1
-                        for k = j+1:numPoints
-                            dist = norm(phaseSpace(j,:) - phaseSpace(k,:));
-                            if dist < r(i)
-                                count = count + 1;
-                            end
-                        end
-                    end
-                    C(i) = 2 * count / (numPoints * (numPoints - 1)); % Factor of 2 for unique pairs
-                end
-                
-                % Estimate Kolmogorov entropy via slope of log(C) vs log(r)
-                logC = log(C + eps); % Avoid log(0)
-                logR = log(r);
-                p = polyfit(logR, logC, 1); % Linear fit
-                D = p(1); % Correlation dimension (slope)
-                kolmogorovVal = (D / T) * log(2); % Approximate K using D and time step
-                
-                kolmogorovValues(sim) = kolmogorovVal;
+                tsallisVal = (1 - sum(PSD .^ q)) / (q - 1);
+                tsallisValues(sim) = tsallisVal;
             end
             
             colIdx = (sType-1)*length(noiseTypes) + nType;
-            results(idx,colIdx) = mean(kolmogorovValues);
+            results(idx,colIdx) = mean(tsallisValues);
         end
     end
 end
 
-% Create variable names for the table
 varNames = {};
 for sType = 1:length(signalTypes)
     for nType = 1:length(noiseTypes)
@@ -107,6 +72,5 @@ for sType = 1:length(signalTypes)
     end
 end
 
-% Create and display table
 T = array2table(results, 'VariableNames', varNames, 'RowNames', strcat("SNR_", string(SNR)));
 disp(T);
