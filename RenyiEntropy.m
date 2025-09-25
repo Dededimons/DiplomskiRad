@@ -1,8 +1,8 @@
 clear; clc; close all;
 
 N = 1024;
-pocetnaFrekvencija = 0; krajnjaFrekvencija = 0.5; 
-brojSimulacija = 100;  
+startFrequency = 0; endFrequency = 0.5; 
+numSimulations = 100;  
 alphaRenyi = 3;  
 SNR = [10, 5, 1]; 
 
@@ -18,14 +18,14 @@ results = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
 
 for sType = 1:length(signalTypes)
     for nType = 1:length(noiseTypes)
-        for indeks = 1:length(SNR)
-            razinaSNR = SNR(indeks);
-            vrijednostiRenyi = zeros(brojSimulacija,1);
+        for idx = 1:length(SNR)
+            currentSNR = SNR(idx);
+            renyiValues = zeros(numSimulations,1);
             
-            for simulacija = 1:brojSimulacija
+            for sim = 1:numSimulations
                 switch signalTypes{sType}
                     case 'fmlin'
-                        signal = fmlin(N, pocetnaFrekvencija, krajnjaFrekvencija);
+                        signal = fmlin(N, startFrequency, endFrequency);
                     case 'fmsin'
                         signal = fmsin(N);
                     case 'fmpar'
@@ -48,14 +48,14 @@ for sType = 1:length(signalTypes)
                         noise = purpleGen();
                 end
                 
-                noisySignal = sigmerge(signal, noise, razinaSNR);
+                noisySignal = sigmerge(signal, noise, currentSNR);
                 [PSD,~] = pwelch(noisySignal, hamming(256), 128, 1024, 1);
                 PSD = PSD / sum(PSD);
                 renyiVal = (1/(1-alphaRenyi)) * log(sum(PSD.^alphaRenyi));
-                vrijednostiRenyi(simulacija) = renyiVal;
+                renyiValues(sim) = renyiVal;
             end
             colIdx = (sType-1)*length(noiseTypes) + nType;
-            results(indeks,colIdx) = mean(vrijednostiRenyi);
+            results(idx,colIdx) = mean(renyiValues);
         end
     end
 end
