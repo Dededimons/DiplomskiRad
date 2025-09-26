@@ -3,13 +3,14 @@ clear; clc; close all;
 N = 1024;
 startFrequency = 0; endFrequency = 0.5; 
 numSimulations = 300;  
-q = 2; 
+q = 0.5; 
 SNR = [10, 5, 1]; 
 
 pinkGen   = dsp.ColoredNoise('Color','pink','SamplesPerFrame',N,'NumChannels',1);
 brownGen  = dsp.ColoredNoise('Color','brown','SamplesPerFrame',N,'NumChannels',1);
 blueGen   = dsp.ColoredNoise('Color','blue','SamplesPerFrame',N,'NumChannels',1);
 purpleGen = dsp.ColoredNoise('Color','purple','SamplesPerFrame',N,'NumChannels',1);
+whiteGen = dsp.ColoredNoise('Color','white','SamplesPerFrame',N,'NumChannels',1);
 
 noiseTypes = {'white','pink','brown','blue','purple'};
 signalTypes = {'fmlin','fmsin','fmpar'};
@@ -37,7 +38,7 @@ for sType = 1:length(signalTypes)
 
                 switch noiseTypes{nType}
                     case 'white'
-                        noise = noisecg(N);
+                        noise = whiteGen();
                     case 'pink'
                         noise = pinkGen();
                     case 'brown'
