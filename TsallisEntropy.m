@@ -61,7 +61,7 @@ for sType = 1:length(signalTypes)
             end
             
             colIdx = (sType-1)*length(noiseTypes) + nType;
-            results(idx,colIdx) = mean(tsallisValues);
+            results(idx,colIdx) = mean(tsallisValues,'omitnan');
         end
     end
 end

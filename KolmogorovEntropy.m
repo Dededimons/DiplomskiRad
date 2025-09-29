@@ -2,46 +2,25 @@ clear; clc; close all;
 
 N = 1024;
 startFrequency = 0; endFrequency = 0.5; 
-numSimulations = 100;  
+numSimulations = 300;  
 SNR = [10, 5, 1]; 
-embeddingDim = 3;
-timeDelay = 1;
 
 pinkGen   = dsp.ColoredNoise('Color','pink','SamplesPerFrame',N,'NumChannels',1);
 brownGen  = dsp.ColoredNoise('Color','brown','SamplesPerFrame',N,'NumChannels',1);
 blueGen   = dsp.ColoredNoise('Color','blue','SamplesPerFrame',N,'NumChannels',1);
 purpleGen = dsp.ColoredNoise('Color','purple','SamplesPerFrame',N,'NumChannels',1);
+whiteGen  = dsp.ColoredNoise('Color','white','SamplesPerFrame',N,'NumChannels',1);
 
-noiseTypes = {'white','pink','brown','blue','purple'};
+noiseTypes  = {'white','pink','brown','blue','purple'};
 signalTypes = {'fmlin','fmsin','fmpar'};
 
 results = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
-
-function C = correlationSum(signal, m, tau, r)
-    N = length(signal);
-    M = N - (m-1)*tau;
-    X = zeros(M, m);
-    for i = 1:m
-        X(:,i) = signal((i-1)*tau + 1 : (i-1)*tau + M);
-    end
-    C = 0;
-    count = 0;
-    for i = 1:M
-        for j = i+1:M
-            dist = norm(X(i,:) - X(j,:));
-            if dist < r
-                count = count + 1;
-            end
-        end
-    end
-    C = 2 * count / (M * (M-1)); 
-end
 
 for sType = 1:length(signalTypes)
     for nType = 1:length(noiseTypes)
         for idx = 1:length(SNR)
             currentSNR = SNR(idx);
-            kolmogorovValues = zeros(numSimulations,1);
+            k2Values = zeros(numSimulations,1);
             
             for sim = 1:numSimulations
                 switch signalTypes{sType}
@@ -58,7 +37,7 @@ for sType = 1:length(signalTypes)
                 
                 switch noiseTypes{nType}
                     case 'white'
-                        noise = noisecg(N);
+                        noise = whiteGen();
                     case 'pink'
                         noise = pinkGen();
                     case 'brown'
@@ -68,21 +47,16 @@ for sType = 1:length(signalTypes)
                     case 'purple'
                         noise = purpleGen();
                 end
-                
-                noisySignal = sigmerge(signal, noise, currentSNR);
-                
-                r = std(noisySignal) / 10;
-                
-                C = correlationSum(noisySignal, embeddingDim, timeDelay, r);
 
-                if C > 0
-                    kolmogorovValues(sim) = -log(C) / timeDelay;
-                else
-                    kolmogorovValues(sim) = 0;
-                end
+                noisySignal = sigmerge(signal, noise, currentSNR);         
+                [K2, ~] = K2En(noisySignal, 'm', 2, 'tau', 1, ...
+                               'r', 0.2*std(noisySignal), 'Logx', exp(1));
+                k2Values(sim) = mean(K2,'omitnan');
+
             end
+            
             colIdx = (sType-1)*length(noiseTypes) + nType;
-            results(idx,colIdx) = mean(kolmogorovValues);
+            results(idx,colIdx) = mean(k2Values,'omitnan');
         end
     end
 end

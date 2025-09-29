@@ -56,7 +56,7 @@ for sType = 1:length(signalTypes)
                 renyiValues(sim) = renyiVal;
             end
             colIdx = (sType-1)*length(noiseTypes) + nType;
-            results(idx,colIdx) = mean(renyiValues);
+            results(idx,colIdx) = mean(renyiValues,'omitnan');
         end
     end
 end
