@@ -3,7 +3,7 @@ clear; clc; close all;
 N = 1024;
 startFrequency = 0; endFrequency = 0.5; 
 numSimulations = 100;  
-alphaRenyi = 10;  
+alphaRenyi = 3;  
 SNR = [10, 5, 1]; 
 
 pinkGen   = dsp.ColoredNoise('Color','pink','SamplesPerFrame',N,'NumChannels',1);
