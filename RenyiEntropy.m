@@ -4,7 +4,7 @@ N = 1024;
 startFrequency = 0; endFrequency = 0.5; 
 numSimulations = 100;  
 alphaRenyi = 3;  
-SNR = [10, 5, 1]; 
+SNR = [15, 10, 5, 1, -5]; 
 
 pinkGen   = dsp.ColoredNoise('Color','pink','SamplesPerFrame',N,'NumChannels',1);
 brownGen  = dsp.ColoredNoise('Color','brown','SamplesPerFrame',N,'NumChannels',1);
@@ -33,7 +33,7 @@ for sType = 1:length(signalTypes)
                         p1 = [1, 0];  
                         p2 = [N/2, 0.25]; 
                         p3 = [N, 0.4]; 
-                        [signal,~] = fmpar(N, p1, p2, p3);
+                        signal = fmpar(N, p1, p2, p3);
                 end
                 
                 switch noiseTypes{nType}
@@ -50,7 +50,7 @@ for sType = 1:length(signalTypes)
                 end
                 
                 noisySignal = sigmerge(signal, noise, currentSNR);
-                [PSD,~] = pwelch(noisySignal, hamming(256), 128, 1024, 1);
+                PSD = pwelch(noisySignal, hamming(256), 128, 1024, 1);
                 PSD = PSD / sum(PSD);
                 renyiVal = (1/(1-alphaRenyi)) * log(sum(PSD.^alphaRenyi));
                 renyiValues(sim) = renyiVal;

@@ -3,7 +3,6 @@ clear; clc; close all;
 N = 1024;
 startFrequency = 0; endFrequency = 0.5; 
 numSimulations = 100;  
-q = 0.5; 
 SNR = [15, 10, 5, 1, -5]; 
 
 pinkGen   = dsp.ColoredNoise('Color','pink','SamplesPerFrame',N,'NumChannels',1);
@@ -21,7 +20,7 @@ for sType = 1:length(signalTypes)
     for nType = 1:length(noiseTypes)
         for idx = 1:length(SNR)
             currentSNR = SNR(idx);
-            tsallisValues = zeros(numSimulations,1);
+            shannonValues = zeros(numSimulations,1);
             
             for sim = 1:numSimulations
                 switch signalTypes{sType}
@@ -35,7 +34,7 @@ for sType = 1:length(signalTypes)
                         p3 = [N, 0.4]; 
                         signal = fmpar(N, p1, p2, p3);
                 end
-
+                
                 switch noiseTypes{nType}
                     case 'white'
                         noise = whiteGen();
@@ -48,18 +47,16 @@ for sType = 1:length(signalTypes)
                     case 'purple'
                         noise = purpleGen();
                 end
-
-                noisySignal = sigmerge(signal, noise, currentSNR);
-
-                PSD = pwelch(noisySignal, hamming(256), 128, 1024, 1);
-                PSD = PSD / sum(PSD); 
                 
-                tsallisVal = (1 - sum(PSD .^ q)) / (q - 1);
-                tsallisValues(sim) = tsallisVal;
+                noisySignal = sigmerge(signal, noise, currentSNR);
+                PSD = pwelch(noisySignal, hamming(256), 128, 1024, 1);
+                PSD = PSD / sum(PSD);
+                
+                shannonVal = -sum(PSD .* log(PSD + eps));
+                shannonValues(sim) = shannonVal;
             end
-            
             colIdx = (sType-1)*length(noiseTypes) + nType;
-            results(idx,colIdx) = mean(tsallisValues,'omitnan');
+            results(idx,colIdx) = mean(shannonValues,'omitnan');
         end
     end
 end
