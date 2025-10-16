@@ -12,7 +12,7 @@ purpleGen = dsp.ColoredNoise('Color','purple','SamplesPerFrame',N,'NumChannels',
 whiteGen = dsp.ColoredNoise('Color','white','SamplesPerFrame',N,'NumChannels',1);
 
 noiseTypes = {'white','pink','brown','blue','purple'};
-signalTypes = {'fmlin','fmsin','fmpar'};
+signalTypes = {'fmlin','fmsin','fmpar','amgauss'};
 
 results = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
 
@@ -33,6 +33,8 @@ for sType = 1:length(signalTypes)
                         p2 = [N/2, 0.25]; 
                         p3 = [N, 0.4]; 
                         signal = fmpar(N, p1, p2, p3);
+                    case 'amgauss'
+                        signal = amgauss(N,N/2,30);
                 end
                 
                 switch noiseTypes{nType}
