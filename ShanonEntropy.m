@@ -1,27 +1,29 @@
 clear; clc; close all;
 
 N = 1024;
-startFrequency = 0; endFrequency = 0.5; 
-numSimulations = 100;  
-SNR = [15, 10, 5, 1, -5]; 
+startFrequency = 0; endFrequency = 0.5;
+numSimulations = 100;
+SNR = [15, 10, 5, 1, -5];
 
-pinkGen   = dsp.ColoredNoise('Color','pink','SamplesPerFrame',N,'NumChannels',1);
-brownGen  = dsp.ColoredNoise('Color','brown','SamplesPerFrame',N,'NumChannels',1);
-blueGen   = dsp.ColoredNoise('Color','blue','SamplesPerFrame',N,'NumChannels',1);
+pinkGen   = dsp.ColoredNoise('Color','pink',  'SamplesPerFrame',N,'NumChannels',1);
+brownGen  = dsp.ColoredNoise('Color','brown', 'SamplesPerFrame',N,'NumChannels',1);
+blueGen   = dsp.ColoredNoise('Color','blue',  'SamplesPerFrame',N,'NumChannels',1);
 purpleGen = dsp.ColoredNoise('Color','purple','SamplesPerFrame',N,'NumChannels',1);
-whiteGen = dsp.ColoredNoise('Color','white','SamplesPerFrame',N,'NumChannels',1);
+whiteGen  = dsp.ColoredNoise('Color','white', 'SamplesPerFrame',N,'NumChannels',1);
 
-noiseTypes = {'white','pink','brown','blue','purple'};
+noiseTypes  = {'white','pink','brown','blue','purple'};
 signalTypes = {'fmlin','fmsin','fmpar','amgauss'};
 
-results = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
+resultsPSD  = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
+resultsSpec = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
 
 for sType = 1:length(signalTypes)
     for nType = 1:length(noiseTypes)
         for idx = 1:length(SNR)
             currentSNR = SNR(idx);
-            shannonValues = zeros(numSimulations,1);
-            
+            shannonPSDvals  = zeros(numSimulations,1);
+            shannonSPECvals = zeros(numSimulations,1);
+
             for sim = 1:numSimulations
                 switch signalTypes{sType}
                     case 'fmlin'
@@ -29,36 +31,35 @@ for sType = 1:length(signalTypes)
                     case 'fmsin'
                         signal = fmsin(N);
                     case 'fmpar'
-                        p1 = [1, 0];  
-                        p2 = [N/2, 0.25]; 
-                        p3 = [N, 0.4]; 
+                        p1 = [1, 0];
+                        p2 = [N/2, 0.25];
+                        p3 = [N, 0.4];
                         signal = fmpar(N, p1, p2, p3);
                     case 'amgauss'
-                        signal = amgauss(N,N/2,30);
+                        signal = amgauss(N, N/2, 30);
                 end
-                
+
                 switch noiseTypes{nType}
-                    case 'white'
-                        noise = whiteGen();
-                    case 'pink'
-                        noise = pinkGen();
-                    case 'brown'
-                        noise = brownGen();
-                    case 'blue'
-                        noise = blueGen();
-                    case 'purple'
-                        noise = purpleGen();
+                    case 'white',  noise = whiteGen();
+                    case 'pink',   noise = pinkGen();
+                    case 'brown',  noise = brownGen();
+                    case 'blue',   noise = blueGen();
+                    case 'purple', noise = purpleGen();
                 end
-                
-                noisySignal = sigmerge(signal, noise, currentSNR);
-                PSD = pwelch(noisySignal, hamming(256), 128, 1024, 1);
-                PSD = PSD / sum(PSD);
-                
-                shannonVal = -sum(PSD .* log(PSD + eps));
-                shannonValues(sim) = shannonVal;
+
+                x = sigmerge(signal, noise, currentSNR);
+
+                PSD = pwelch(x, hamming(256), 128, 1024, 1);
+                PSD = PSD / (sum(PSD) + eps);
+                shannonPSDvals(sim) = -sum(PSD .* log(PSD + eps));
+
+                [tfr, t, f] = tfrsp(x, 1:N, N);
+                shannonSPECvals(sim) = renyi(tfr, t, f, 1);
             end
+
             colIdx = (sType-1)*length(noiseTypes) + nType;
-            results(idx,colIdx) = mean(shannonValues,'omitnan');
+            resultsPSD(idx, colIdx)  = mean(shannonPSDvals,  'omitnan');
+            resultsSpec(idx, colIdx) = mean(shannonSPECvals, 'omitnan');
         end
     end
 end
@@ -69,6 +70,12 @@ for sType = 1:length(signalTypes)
         varNames{end+1} = [signalTypes{sType} '_' noiseTypes{nType}];
     end
 end
+rowNames = strcat("SNR_", string(SNR));
 
-T = array2table(results, 'VariableNames', varNames, 'RowNames', strcat("SNR_", string(SNR)));
-disp(T);
+T_PSD  = array2table(resultsPSD,  'VariableNames', varNames, 'RowNames', rowNames);
+T_spec = array2table(resultsSpec, 'VariableNames', varNames, 'RowNames', rowNames);
+
+disp('Shannon entropy on PSD:');
+disp(T_PSD);
+disp('Shannon entropy on spectrogram (TFTB renyi(), alpha=1):');
+disp(T_spec);

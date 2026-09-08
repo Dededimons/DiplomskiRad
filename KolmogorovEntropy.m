@@ -1,27 +1,29 @@
 clear; clc; close all;
 
 N = 1024;
-startFrequency = 0; endFrequency = 0.5; 
-numSimulations = 100;  
-SNR = [15, 10, 5, 1, -5]; 
+startFrequency = 0; endFrequency = 0.5;
+numSimulations = 100;
+SNR = [15, 10, 5, 1, -5];
 
-pinkGen   = dsp.ColoredNoise('Color','pink','SamplesPerFrame',N,'NumChannels',1);
-brownGen  = dsp.ColoredNoise('Color','brown','SamplesPerFrame',N,'NumChannels',1);
-blueGen   = dsp.ColoredNoise('Color','blue','SamplesPerFrame',N,'NumChannels',1);
+pinkGen   = dsp.ColoredNoise('Color','pink',  'SamplesPerFrame',N,'NumChannels',1);
+brownGen  = dsp.ColoredNoise('Color','brown', 'SamplesPerFrame',N,'NumChannels',1);
+blueGen   = dsp.ColoredNoise('Color','blue',  'SamplesPerFrame',N,'NumChannels',1);
 purpleGen = dsp.ColoredNoise('Color','purple','SamplesPerFrame',N,'NumChannels',1);
-whiteGen  = dsp.ColoredNoise('Color','white','SamplesPerFrame',N,'NumChannels',1);
+whiteGen  = dsp.ColoredNoise('Color','white', 'SamplesPerFrame',N,'NumChannels',1);
 
 noiseTypes  = {'white','pink','brown','blue','purple'};
 signalTypes = {'fmlin','fmsin','fmpar','amgauss'};
 
-results = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
+resultsPSD  = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
+resultsSpec = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
 
 for sType = 1:length(signalTypes)
     for nType = 1:length(noiseTypes)
         for idx = 1:length(SNR)
             currentSNR = SNR(idx);
-            k2Values = zeros(numSimulations,1);
-            
+            k2PSDvals  = zeros(numSimulations,1);
+            k2SPECvals = zeros(numSimulations,1);
+
             for sim = 1:numSimulations
                 switch signalTypes{sType}
                     case 'fmlin'
@@ -29,40 +31,55 @@ for sType = 1:length(signalTypes)
                     case 'fmsin'
                         signal = fmsin(N);
                     case 'fmpar'
-                        p1 = [1, 0];  
-                        p2 = [N/2, 0.25]; 
-                        p3 = [N, 0.4]; 
+                        p1 = [1, 0];
+                        p2 = [N/2, 0.25];
+                        p3 = [N, 0.4];
                         signal = fmpar(N, p1, p2, p3);
                     case 'amgauss'
-                        signal = amgauss(N,N/2,30);
+                        signal = amgauss(N, N/2, 30);
                 end
-                
+
                 switch noiseTypes{nType}
-                    case 'white'
-                        noise = whiteGen();
-                    case 'pink'
-                        noise = pinkGen();
-                    case 'brown'
-                        noise = brownGen();
-                    case 'blue'
-                        noise = blueGen();
-                    case 'purple'
-                        noise = purpleGen();
+                    case 'white',  noise = whiteGen();
+                    case 'pink',   noise = pinkGen();
+                    case 'brown',  noise = brownGen();
+                    case 'blue',   noise = blueGen();
+                    case 'purple', noise = purpleGen();
                 end
 
-                noisySignal = sigmerge(signal, noise, currentSNR); 
-                PSD = pwelch(noisySignal, hamming(256), 128, 1024, 1);
-                PSD = PSD / sum(PSD);
+                x = sigmerge(signal, noise, currentSNR);
 
-
+                PSD = pwelch(x, hamming(256), 128, 1024, 1);
+                PSD = PSD / (sum(PSD) + eps);
                 K2 = K2En(PSD, 'm', 2, 'tau', 1, ...
-                               'r', 0.2*std(PSD), 'Logx', exp(1));
-                k2Values(sim) = mean(K2,'omitnan');
+                          'r', 0.2*std(PSD), 'Logx', exp(1));
+                k2PSDvals(sim) = mean(K2, 'omitnan');
 
+                [tfr, ~, ~] = tfrsp(x, 1:N, N);
+                tfr_pos = abs(tfr(1:N/2+1, :));
+
+                colIndices = round(linspace(1, N, 20));
+                k2cols = zeros(length(colIndices), 1);
+                for ci = 1:length(colIndices)
+                    slice = tfr_pos(:, colIndices(ci));
+                    slice = slice / (sum(slice) + eps);
+
+                    s = std(slice);
+                    if s < 1e-6
+                        k2cols(ci) = NaN;
+                        continue;
+                    end
+
+                    K2col = K2En(slice, 'm', 2, 'tau', 1, ...
+                                 'r', 0.2*s, 'Logx', exp(1));
+                    k2cols(ci) = mean(K2col, 'omitnan');
+                end
+                k2SPECvals(sim) = mean(k2cols, 'omitnan');
             end
-            
+
             colIdx = (sType-1)*length(noiseTypes) + nType;
-            results(idx,colIdx) = mean(k2Values,'omitnan');
+            resultsPSD(idx, colIdx)  = mean(k2PSDvals,  'omitnan');
+            resultsSpec(idx, colIdx) = mean(k2SPECvals, 'omitnan');
         end
     end
 end
@@ -73,6 +90,12 @@ for sType = 1:length(signalTypes)
         varNames{end+1} = [signalTypes{sType} '_' noiseTypes{nType}];
     end
 end
+rowNames = strcat("SNR_", string(SNR));
 
-T = array2table(results, 'VariableNames', varNames, 'RowNames', strcat("SNR_", string(SNR)));
-disp(T);
+T_PSD  = array2table(resultsPSD,  'VariableNames', varNames, 'RowNames', rowNames);
+T_spec = array2table(resultsSpec, 'VariableNames', varNames, 'RowNames', rowNames);
+
+disp('K2 entropy on PSD:');
+disp(T_PSD);
+disp('K2 entropy on spectrogram:');
+disp(T_spec);

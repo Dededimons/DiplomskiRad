@@ -6,26 +6,22 @@ numSimulations = 100;
 alphaRenyi = 3;
 SNR = [15, 10, 5, 1, -5];
 
-
-pinkGen   = dsp.ColoredNoise('Color','pink','SamplesPerFrame',N,'NumChannels',1);
-brownGen  = dsp.ColoredNoise('Color','brown','SamplesPerFrame',N,'NumChannels',1);
-blueGen   = dsp.ColoredNoise('Color','blue','SamplesPerFrame',N,'NumChannels',1);
+pinkGen   = dsp.ColoredNoise('Color','pink',  'SamplesPerFrame',N,'NumChannels',1);
+brownGen  = dsp.ColoredNoise('Color','brown', 'SamplesPerFrame',N,'NumChannels',1);
+blueGen   = dsp.ColoredNoise('Color','blue',  'SamplesPerFrame',N,'NumChannels',1);
 purpleGen = dsp.ColoredNoise('Color','purple','SamplesPerFrame',N,'NumChannels',1);
-whiteGen  = dsp.ColoredNoise('Color','white','SamplesPerFrame',N,'NumChannels',1);
+whiteGen  = dsp.ColoredNoise('Color','white', 'SamplesPerFrame',N,'NumChannels',1);
 
 noiseTypes  = {'white','pink','brown','blue','purple'};
 signalTypes = {'fmlin','fmsin','fmpar','amgauss'};
 
-hwin = tftb_window(61,'hanning');
-
-resultsPSD = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
+resultsPSD      = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
 resultsSpecRenyi = zeros(length(SNR), length(signalTypes)*length(noiseTypes));
 
 for sType = 1:length(signalTypes)
     for nType = 1:length(noiseTypes)
         for idx = 1:length(SNR)
             currentSNR = SNR(idx);
-
             renyiPSDvals  = zeros(numSimulations,1);
             renyiSPECvals = zeros(numSimulations,1);
 
@@ -55,25 +51,15 @@ for sType = 1:length(signalTypes)
                 x = sigmerge(signal, noise, currentSNR);
 
                 [PSD, ~] = pwelch(x, hamming(256), 128, 1024, 1);
-                PSD = PSD / (sum(PSD) + eps);  
-                renyiPSD = (1/(1-alphaRenyi)) * log(sum(PSD.^alphaRenyi));
-                renyiPSDvals(sim) = renyiPSD;
+                PSD = PSD / (sum(PSD) + eps);
+                renyiPSDvals(sim) = (1/(1-alphaRenyi)) * log(sum(PSD.^alphaRenyi));
 
-                [tfr, ~, ~] = tfrsp(x, 1:N, N, hwin);
-                tfr_pos = abs(tfr(1:N/2+1, :));
-                P = tfr_pos ./ (sum(tfr_pos(:)) + eps);
-
-
-                if abs(alphaRenyi - 1) < 1e-8
-                    renyiSPEC = -sum(P(:) .* log(P(:) + eps));
-                else
-                    renyiSPEC = (1/(1-alphaRenyi)) * log(sum(P(:).^alphaRenyi));
-                end
-                renyiSPECvals(sim) = renyiSPEC;
+                [tfr, t, f] = tfrsp(x, 1:N, N);
+                renyiSPECvals(sim) = renyi(tfr, t, f, alphaRenyi);
             end
 
             colIdx = (sType-1)*length(noiseTypes) + nType;
-            resultsPSD(idx, colIdx)       = mean(renyiPSDvals,  'omitnan');
+            resultsPSD(idx, colIdx)      = mean(renyiPSDvals,  'omitnan');
             resultsSpecRenyi(idx, colIdx) = mean(renyiSPECvals, 'omitnan');
         end
     end
@@ -87,10 +73,10 @@ for sType = 1:length(signalTypes)
 end
 rowNames = strcat("SNR_", string(SNR));
 
-T            = array2table(resultsPSD,       'VariableNames', varNames, 'RowNames', rowNames);
-T_specRenyi  = array2table(resultsSpecRenyi, 'VariableNames', varNames, 'RowNames', rowNames);
+T           = array2table(resultsPSD,        'VariableNames', varNames, 'RowNames', rowNames);
+T_specRenyi = array2table(resultsSpecRenyi,  'VariableNames', varNames, 'RowNames', rowNames);
 
-disp('Rényi entropy on PSD (original):');
+disp('Rényi entropy on PSD:');
 disp(T);
-disp('Rényi entropy on normalized spectrogram:');
+disp('Rényi entropy on spectrogram (TFTB renyi()):');
 disp(T_specRenyi);
