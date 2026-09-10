@@ -21,8 +21,8 @@ for sType = 1:length(signalTypes)
     for nType = 1:length(noiseTypes)
         for idx = 1:length(SNR)
             currentSNR = SNR(idx);
-            k2PSDvals  = zeros(numSimulations,1);
-            k2SPECvals = zeros(numSimulations,1);
+            lzPSDvals  = zeros(numSimulations,1);
+            lzSPECvals = zeros(numSimulations,1);
 
             for sim = 1:numSimulations
                 switch signalTypes{sType}
@@ -51,35 +51,26 @@ for sType = 1:length(signalTypes)
 
                 PSD = pwelch(x, hamming(256), 128, 1024, 1);
                 PSD = PSD / (sum(PSD) + eps);
-                K2 = K2En(PSD, 'm', 2, 'tau', 1, ...
-                          'r', 0.2*std(PSD), 'Logx', exp(1));
-                k2PSDvals(sim) = mean(K2, 'omitnan');
+                binaryPSD = double(PSD > median(PSD));
+                lzPSDvals(sim) = kolmogorov(binaryPSD);
 
                 [tfr, ~, ~] = tfrsp(x, 1:N, N);
                 tfr_pos = abs(tfr(1:N/2+1, :));
 
                 colIndices = round(linspace(1, N, 20));
-                k2cols = zeros(length(colIndices), 1);
+                lzcols = zeros(length(colIndices), 1);
                 for ci = 1:length(colIndices)
                     slice = tfr_pos(:, colIndices(ci));
                     slice = slice / (sum(slice) + eps);
-
-                    s = std(slice);
-                    if s < 1e-6
-                        k2cols(ci) = NaN;
-                        continue;
-                    end
-
-                    K2col = K2En(slice, 'm', 2, 'tau', 1, ...
-                                 'r', 0.2*s, 'Logx', exp(1));
-                    k2cols(ci) = mean(K2col, 'omitnan');
+                    binarySlice = double(slice > median(slice));
+                    lzcols(ci) = kolmogorov(binarySlice);
                 end
-                k2SPECvals(sim) = mean(k2cols, 'omitnan');
+                lzSPECvals(sim) = mean(lzcols, 'omitnan');
             end
 
             colIdx = (sType-1)*length(noiseTypes) + nType;
-            resultsPSD(idx, colIdx)  = mean(k2PSDvals,  'omitnan');
-            resultsSpec(idx, colIdx) = mean(k2SPECvals, 'omitnan');
+            resultsPSD(idx, colIdx)  = mean(lzPSDvals,  'omitnan');
+            resultsSpec(idx, colIdx) = mean(lzSPECvals, 'omitnan');
         end
     end
 end
@@ -95,7 +86,7 @@ rowNames = strcat("SNR_", string(SNR));
 T_PSD  = array2table(resultsPSD,  'VariableNames', varNames, 'RowNames', rowNames);
 T_spec = array2table(resultsSpec, 'VariableNames', varNames, 'RowNames', rowNames);
 
-disp('K2 entropy on PSD:');
+disp('Kolmogorov (Lempel-Ziv) complexity on PSD:');
 disp(T_PSD);
-disp('K2 entropy on spectrogram:');
+disp('Kolmogorov (Lempel-Ziv) complexity on spectrogram:');
 disp(T_spec);
