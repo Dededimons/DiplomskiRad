@@ -51,13 +51,13 @@ for sType = 1:length(signalTypes)
                 x = sigmerge(signal, noise, currentSNR);
 
                 PSD = pwelch(x, hamming(256), 128, 1024, 1);
-                PSD = PSD / (sum(PSD) + eps);
+                PSD = PSD / sum(PSD);
                 tsallisPSDvals(sim) = (1 - sum(PSD .^ q)) / (q - 1);
 
-               
                 [tfr, t, f] = tfrsp(x, 1:N, N);
-                Hq = renyi(tfr, t, f, q);
-                tsallisSPECvals(sim) = (exp((1-q) * Hq) - 1) / (1-q);
+                f = sort(f);
+                P = tfr ./ integ2d(tfr, t, f);
+                tsallisSPECvals(sim) = (1 - integ2d(P.^q, t, f)) / (q - 1);
             end
 
             colIdx = (sType-1)*length(noiseTypes) + nType;
@@ -80,5 +80,5 @@ T_spec = array2table(resultsSpec, 'VariableNames', varNames, 'RowNames', rowName
 
 disp('Tsallis entropy on PSD:');
 disp(T_PSD);
-disp('Tsallis entropy on spectrogram (via Rényi conversion, q=0.5):');
+disp('Tsallis entropy on spectrogram (integ2d normalization):');
 disp(T_spec);

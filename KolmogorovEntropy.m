@@ -50,7 +50,7 @@ for sType = 1:length(signalTypes)
                 x = sigmerge(signal, noise, currentSNR);
 
                 PSD = pwelch(x, hamming(256), 128, 1024, 1);
-                PSD = PSD / (sum(PSD) + eps);
+                PSD = PSD / (sum(PSD));
                 binaryPSD = double(PSD > median(PSD));
                 lzPSDvals(sim) = kolmogorov(binaryPSD);
 
@@ -61,7 +61,7 @@ for sType = 1:length(signalTypes)
                 lzcols = zeros(length(colIndices), 1);
                 for ci = 1:length(colIndices)
                     slice = tfr_pos(:, colIndices(ci));
-                    slice = slice / (sum(slice) + eps);
+                    slice = slice / (sum(slice));
                     binarySlice = double(slice > median(slice));
                     lzcols(ci) = kolmogorov(binarySlice);
                 end

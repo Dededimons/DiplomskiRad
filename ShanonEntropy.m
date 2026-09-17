@@ -50,8 +50,8 @@ for sType = 1:length(signalTypes)
                 x = sigmerge(signal, noise, currentSNR);
 
                 PSD = pwelch(x, hamming(256), 128, 1024, 1);
-                PSD = PSD / (sum(PSD) + eps);
-                shannonPSDvals(sim) = -sum(PSD .* log(PSD + eps));
+                PSD = PSD / (sum(PSD));
+                shannonPSDvals(sim) = -sum(PSD .* log(PSD));
 
                 [tfr, t, f] = tfrsp(x, 1:N, N);
                 shannonSPECvals(sim) = renyi(tfr, t, f, 1);

@@ -1,3 +1,4 @@
+
 clear; clc; close all;
 
 N = 1024;
@@ -51,7 +52,7 @@ for sType = 1:length(signalTypes)
                 x = sigmerge(signal, noise, currentSNR);
 
                 [PSD, ~] = pwelch(x, hamming(256), 128, 1024, 1);
-                PSD = PSD / (sum(PSD) + eps);
+                PSD = PSD / (sum(PSD));
                 renyiPSDvals(sim) = (1/(1-alphaRenyi)) * log(sum(PSD.^alphaRenyi));
 
                 [tfr, t, f] = tfrsp(x, 1:N, N);
